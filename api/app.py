@@ -22,9 +22,7 @@ CREATE_TABLE_SQL = """
     )
 """
 app = Flask(__name__)
-app.config["SITE_HOST"] = os.getenv("SITE_HOST")
-app.config["SITE_PORT"] = os.getenv("SITE_PORT")
-app.config["SITE_URL"] = os.getenv("SITE_URL")
+
 app.config["LOGOUT_REDIRECT_URL"] = os.getenv("LOGOUT_REDIRECT_URL")
 app.config["KINDE_CALLBACK_URL"] = os.getenv("KINDE_CALLBACK_URL")
 app.config["CLIENT_ID"] = os.getenv("CLIENT_ID")
@@ -40,16 +38,28 @@ app.config["MGMT_API_CLIENT_ID"] = os.getenv("MGMT_API_CLIENT_ID")
 app.config["MGMT_API_CLIENT_SECRET"] = os.getenv("MGMT_API_CLIENT_SECRET")
 Session(app)
 
+# Map the GRANT_TYPE string to the GrantType enum
+grant_type_map = {
+    "client_credentials": GrantType.CLIENT_CREDENTIALS,
+    "authorization_code": GrantType.AUTHORIZATION_CODE,
+    "authorization_code_with_pkce": GrantType.AUTHORIZATION_CODE_WITH_PKCE,
+}
+
+# Get the grant_type from the config and map it to the enum
+grant_type = grant_type_map.get(app.config["GRANT_TYPE"].lower())
+if not grant_type:
+    raise ValueError("Invalid GRANT_TYPE provided")
+
 configuration = Configuration(host=app.config["KINDE_ISSUER_URL"])
 kinde_api_client_params = {
     "configuration": configuration,
     "domain": app.config["KINDE_ISSUER_URL"],
     "client_id": app.config["CLIENT_ID"],
     "client_secret": app.config["CLIENT_SECRET"],
-    "grant_type": app.config["GRANT_TYPE"],
+    "grant_type": grant_type,
     "callback_url": app.config["KINDE_CALLBACK_URL"],
 }
-if app.config["GRANT_TYPE"] == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
+if grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
     kinde_api_client_params["code_verifier"] = app.config["CODE_VERIFIER"]
 
 kinde_client = KindeApiClient(**kinde_api_client_params)
