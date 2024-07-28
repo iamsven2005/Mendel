@@ -1,15 +1,6 @@
-Flask
 flask
 Flask-Session
-Werkzeug
-python-dotenv
 psycopg2-binary
 resend
-pytailwindcss
-Flask-Assets
-psycopg2
 cuid
-random-word
-dotenv
-flask_talisman
-gunicorn
+python-dotenv

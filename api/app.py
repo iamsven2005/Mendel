@@ -1,7 +1,6 @@
 from datetime import date, timedelta
 from flask import Flask, url_for, render_template, request, session, redirect, flash
 from flask_session import Session
-from flask_talisman import Talisman
 from functools import wraps
 import os
 import psycopg2
@@ -18,24 +17,6 @@ load_dotenv()
 app = Flask(__name__)
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
-
-# Initialize Flask-Talisman
-talisman = Talisman(app, content_security_policy={
-    'default-src': [
-        "'self'",
-        'https://cdn.jsdelivr.net'
-    ],
-    'img-src': '*',
-    'style-src': [
-        "'self'",
-        "'unsafe-inline'",
-        'https://cdn.jsdelivr.net'
-    ],
-    'script-src': [
-        "'self'",
-        'https://cdn.jsdelivr.net'
-    ]
-})
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 DATABASE_URL = os.getenv("DATABASE_URL")

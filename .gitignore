@@ -12,3 +12,4 @@ ENV/
 env.bak/ 
 venv.bak/
 api/flask_session/
+node_modules/

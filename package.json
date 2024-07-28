@@ -1,8 +1,5 @@
 {
     "engines": {
         "node": "20.x"
-    },
-    "dependencies": {
-        "todo": "^1.1.0"
     }
 }

@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}School Forum{% endblock %}</title>
+    <title>{% block title %}Mendel{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 text-gray-900">
     <header class="bg-blue-600 text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-3xl font-bold">School Forum</h1>
+            <h1 class="text-3xl font-bold">Mendel</h1>
             <form method="GET" action="{{ url_for('search') }}" class="flex items-center">
                 <input type="text" name="query" placeholder="Search..." class="p-2 rounded">
                 <button type="submit" class="bg-blue-500 text-white p-2 rounded ml-2">Search</button>
@@ -38,7 +38,7 @@
         {% block content %}{% endblock %}
     </main>
     <footer class="bg-blue-600 text-white p-4 text-center">
-        <p>&copy; 2024 School Forum</p>
+        <p>&copy; 2024 Mendel</p>
     </footer>
 </body>
 </html>
