@@ -12,6 +12,10 @@ from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_httpauth import HTTPTokenAuth
+import hmac
+import hashlib
+import base64
 
 load_dotenv()
 
@@ -24,9 +28,12 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
+auth = HTTPTokenAuth(scheme='Bearer')
+
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 DATABASE_URL = os.getenv("DATABASE_URL")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
 resend.api_key = RESEND_API_KEY
 
@@ -200,9 +207,15 @@ def verify():
 
 @app.route("/webhook", methods=["POST"])
 @limiter.limit("5 per minute")
+@auth.login_required
 def webhook():
+    signature = request.headers.get('X-Signature')
+    if not signature or not verify_signature(request.data, signature, WEBHOOK_SECRET):
+        return jsonify({"message": "Invalid signature."}), 400
+
     data = request.get_json()
-    if data and data.get("status") == "email.delivered":
+    if data and data.get("event") == "email.delivered":
+        email = data.get("recipient")
         gmail = session.get("gmail")
         if not gmail:
             return jsonify({"message": "No Gmail found in session."}), 400
@@ -235,6 +248,18 @@ def webhook():
             }
             resend.Emails.send(params)
         return jsonify({"message": "School email verification failed."}), 400
+
+@auth.verify_token
+def verify_token(token):
+    return token == WEBHOOK_SECRET
+
+def verify_signature(payload, signature, secret):
+    computed_signature = hmac.new(
+        secret.encode(),
+        msg=payload,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(computed_signature, signature)
 
 @app.route("/logout")
 @login_required
