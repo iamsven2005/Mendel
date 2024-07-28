@@ -1,4 +1,3 @@
-from datetime import date, timedelta
 from flask import Flask, url_for, render_template, request, session, redirect, flash
 from flask_session import Session
 from functools import wraps
@@ -11,12 +10,19 @@ import resend
 from cuid import cuid
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -114,10 +120,12 @@ def login_required(f):
     return decorated_function
 
 @app.route("/")
+@limiter.limit("10 per minute")
 def index():
     return render_template("index.html")
 
 @app.route("/signup", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def signup():
     if request.method == "POST":
         email = request.form.get("email").strip().lower()
@@ -160,6 +168,7 @@ def signup():
         return render_template("signup.html")
 
 @app.route("/verify", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def verify():
     if request.method == "POST":
         email = session.get("email")
@@ -188,6 +197,7 @@ def verify():
 
 @app.route("/logout")
 @login_required
+@limiter.limit("5 per minute")
 def logout():
     session.clear()
     flash("You have been logged out.")
@@ -195,6 +205,7 @@ def logout():
 
 @app.route("/post", methods=["GET", "POST"])
 @login_required
+@limiter.limit("10 per minute")
 def create_post():
     if request.method == "POST":
         title = request.form.get("title").strip()
@@ -219,6 +230,7 @@ def create_post():
 
 @app.route("/school/<school_name>")
 @login_required
+@limiter.limit("10 per minute")
 def school_posts(school_name):
     valid_schools = [
         "School of Applied Science",
@@ -248,6 +260,7 @@ def school_posts(school_name):
 
 @app.route("/like_dislike/<string:post_id>/<action>", methods=["POST"])
 @login_required
+@limiter.limit("10 per minute")
 def like_dislike(post_id, action):
     user_id = session.get("user_id")  # assuming user_id is stored in session after login
     if action not in ["like", "dislike"]:
@@ -269,6 +282,7 @@ def like_dislike(post_id, action):
 
 @app.route("/comment/<string:post_id>", methods=["POST"])
 @login_required
+@limiter.limit("10 per minute")
 def comment(post_id):
     content = request.form.get("content").strip()
     comment_id = generate_id()
@@ -281,6 +295,7 @@ def comment(post_id):
 
 @app.route("/comment_vote/<string:comment_id>/<action>", methods=["POST"])
 @login_required
+@limiter.limit("10 per minute")
 def comment_vote(comment_id, action):
     if action not in ["upvote", "downvote"]:
         return {"message": "Invalid action"}, 400
@@ -300,6 +315,7 @@ def comment_vote(comment_id, action):
 
 @app.route("/post/<string:post_id>")
 @login_required
+@limiter.limit("10 per minute")
 def post_detail(post_id):
     with connection:
         with connection.cursor() as cursor:
@@ -311,6 +327,7 @@ def post_detail(post_id):
 
 @app.route("/search", methods=["GET"])
 @login_required
+@limiter.limit("10 per minute")
 def search():
     query = request.args.get("query")
     with connection:
@@ -327,6 +344,7 @@ def search():
 
 @app.route("/filter", methods=["GET"])
 @login_required
+@limiter.limit("10 per minute")
 def filter():
     school = request.args.get("school")
     order_by = request.args.get("order_by", "created_at")
