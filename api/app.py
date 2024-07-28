@@ -1,4 +1,5 @@
-from flask import Flask, url_for, render_template, request, session, redirect, flash, jsonify
+from datetime import date, timedelta
+from flask import Flask, url_for, render_template, request, session, redirect, flash, abort
 from flask_session import Session
 from functools import wraps
 import os
@@ -12,6 +13,8 @@ from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import hmac
+import hashlib
 
 load_dotenv()
 
@@ -27,7 +30,7 @@ limiter = Limiter(
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 DATABASE_URL = os.getenv("DATABASE_URL")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-RESEND_SIGNING_SECRET = os.getenv("RESEND_SIGNING_SECRET")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
 resend.api_key = RESEND_API_KEY
 
@@ -103,21 +106,12 @@ def generate_id():
 def generate_verification_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-def send_verification_email(email, code):
-    params = {
-        "from": ADMIN_EMAIL,
-        "to": [email],
-        "subject": "Your Verification Code",
-        "html": f"<p>Your verification code is: <strong>{code}</strong></p>",
-    }
-    return resend.Emails.send(params)
-
-def send_test_email(email):
+def send_verification_email(email, content):
     params = {
         "from": ADMIN_EMAIL,
         "to": [email],
         "subject": "Email Verification Test",
-        "html": "<p>This is a test email to verify your school email address.</p>",
+        "html": f"<p>{content}</p>",
     }
     return resend.Emails.send(params)
 
@@ -141,12 +135,8 @@ def signup():
         gmail = request.form.get("gmail").strip().lower()
         school_email = request.form.get("school_email").strip().lower()
 
-        if not gmail.endswith("@gmail.com"):
-            flash("Personal email must be a Gmail address.")
-            return redirect("/signup")
-        
-        if not school_email.endswith("@mymail.nyp.edu.sg"):
-            flash("School email must end with @mymail.nyp.edu.sg")
+        if not gmail.endswith("@gmail.com") or not school_email.endswith("@mymail.nyp.edu.sg"):
+            flash("Emails must be a valid Gmail and school email address")
             return redirect("/signup")
 
         with connection:
@@ -160,12 +150,26 @@ def signup():
                     session["username"] = user.username  # Store username in session
                     flash("Welcome back! You are now logged in.")
                     return redirect("/")
-                else:  # If user does not exist or is not verified
-                    send_test_email(school_email)
-                    session["gmail"] = gmail
-                    session["school_email"] = school_email
-                    flash("A test email has been sent to your school email. Please wait for verification.")
-                    return redirect("/verify")
+                elif user and not user.verified:  # If user exists but not verified
+                    code = generate_verification_code()
+                    hashed_code = generate_password_hash(code)
+                    cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, gmail))
+                else:  # If user does not exist
+                    user_id = generate_id()
+                    username = generate_username()
+                    code = generate_verification_code()
+                    hashed_code = generate_password_hash(code)
+                    cursor.execute("INSERT INTO users (id, email, username, verification_code) VALUES (%s, %s, %s, %s)", (user_id, gmail, username, hashed_code))
+
+        response = send_verification_email(school_email, "Email Verification Test")
+
+        if response.get("id"):
+            session["gmail"] = gmail
+            session["school_email"] = school_email
+            return redirect("/verify")
+        else:
+            flash("Failed to send verification email. Please try again.")
+            return redirect("/signup")
     else:
         return render_template("signup.html")
 
@@ -174,68 +178,65 @@ def signup():
 def verify():
     if request.method == "POST":
         gmail = session.get("gmail")
-        school_email = session.get("school_email")
-        if not gmail or not school_email:
+        if not gmail:
             return redirect("/signup")
 
-        code = generate_verification_code()
-        hashed_code = generate_password_hash(code)
+        code = request.form.get("code").strip()
 
         with connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT id FROM users WHERE email = %s", (gmail,))
-                user = cursor.fetchone()
-                
-                if user:
-                    cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, gmail))
-                else:
-                    user_id = generate_id()
-                    username = generate_username()
-                    cursor.execute("INSERT INTO users (id, email, username, verification_code) VALUES (%s, %s, %s, %s)", (user_id, gmail, username, hashed_code))
+                cursor.execute("SELECT id, username, verification_code FROM users WHERE email = %s", (gmail,))
+                row = cursor.fetchone()
 
-        send_verification_email(gmail, code)
-        flash("A verification code has been sent to your personal Gmail.")
-        return redirect("/verify")
+                if row and check_password_hash(row.verification_code, code):
+                    cursor.execute("UPDATE users SET verified = TRUE, verification_code = NULL WHERE email = %s", (gmail,))
+                    session["logged_in"] = True
+                    session["user_id"] = row.id  # Store user_id in session
+                    session["username"] = row.username  # Store username in session
+                    flash("Verification successful! You are now logged in.")
+                    return redirect("/")
+                else:
+                    flash("Invalid verification code. Please try again.")
+                    return redirect("/verify")
     else:
         return render_template("verify.html")
 
 @app.route("/webhook", methods=["POST"])
-@limiter.limit("5 per minute")
+@limiter.limit("10 per minute")
 def webhook():
-    data = request.get_json()
-    if data and data.get("type") == "email.delivered":
+    signature = request.headers.get('x-resend-signature', '')
+    computed_signature = hmac.new(
+        key=WEBHOOK_SECRET.encode('utf-8'),
+        msg=request.data,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(signature, computed_signature):
+        abort(400, "Invalid signature")
+
+    event = request.get_json()
+
+    if event["type"] == "email.delivered":
+        school_email = event["data"]["to"][0]
         gmail = session.get("gmail")
-        if not gmail:
-            return jsonify({"message": "No Gmail found in session."}), 400
 
-        code = generate_verification_code()
-        hashed_code = generate_password_hash(code)
-
-        with connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT id FROM users WHERE email = %s", (gmail,))
-                user = cursor.fetchone()
-                
-                if user:
-                    cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, gmail))
-                else:
-                    user_id = generate_id()
-                    username = generate_username()
-                    cursor.execute("INSERT INTO users (id, email, username, verification_code) VALUES (%s, %s, %s, %s)", (user_id, gmail, username, hashed_code))
-
-        send_verification_email(gmail, code)
-        return jsonify({"message": "Verification email sent to personal Gmail."}), 200
-    else:
-        gmail = session.get("gmail")
         if gmail:
-            params = {
-                "from": ADMIN_EMAIL,
-                "to": [gmail],
-                "subject": "School Email Verification Failed",
-                "html": "<p>Your school email verification failed. Please check your school email address and try again.</p>",
-            }
-            resend.Emails.send(params)
-        return jsonify({"message": "School email verification failed."}), 400
+            with connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT verification_code FROM users WHERE email = %s", (gmail,))
+                    user = cursor.fetchone()
+                    if user:
+                        verification_code = user.verification_code
+                        response = send_verification_email(gmail, f"Your verification code is: {verification_code}")
+
+                        if not response.get("id"):
+                            flash("Failed to send verification code to Gmail. Please try again.")
+                            return redirect("/signup")
+
+            flash("Verification code sent to your Gmail.")
+            return redirect("/verify")
+    
+    return "", 204
 
 @app.route("/logout")
 @login_required
