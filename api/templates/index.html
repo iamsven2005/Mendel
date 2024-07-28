@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Main Page{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="text-4xl font-bold mb-6">Welcome to the School Forums</h1>
+    <ul class="list-none">
+        <li class="mb-2"><a class="text-blue-500 hover:underline" href="{{ url_for('school_posts', school_name='School of Applied Science') }}">School of Applied Science</a></li>
+        <li class="mb-2"><a class="text-blue-500 hover:underline" href="{{ url_for('school_posts', school_name='School of Business Management') }}">School of Business Management</a></li>
+        <li class="mb-2"><a class="text-blue-500 hover:underline" href="{{ url_for('school_posts', school_name='School of Design & Media') }}">School of Design & Media</a></li>
+        <li class="mb-2"><a class="text-blue-500 hover:underline" href="{{ url_for('school_posts', school_name='School of Engineering') }}">School of Engineering</a></li>
+        <li class="mb-2"><a class="text-blue-500 hover:underline" href="{{ url_for('school_posts', school_name='School of Health & Social Sciences') }}">School of Health & Social Sciences</a></li>
+        <li class="mb-2"><a class="text-blue-500 hover:underline" href="{{ url_for('school_posts', school_name='School of Information Technology') }}">School of Information Technology</a></li>
+    </ul>
+</div>
+{% endblock %}

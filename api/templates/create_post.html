@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Create Post{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-8 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Create a New Post</h1>
+    <form method="POST">
+        <div class="mb-4">
+            <label for="title" class="block text-gray-700">Title:</label>
+            <input type="text" id="title" name="title" class="w-full p-2 border border-gray-300 rounded" required>
+        </div>
+        <div class="mb-4">
+            <label for="content" class="block text-gray-700">Content:</label>
+            <textarea id="content" name="content" class="w-full p-2 border border-gray-300 rounded" required></textarea>
+        </div>
+        <div class="mb-4">
+            <label for="school" class="block text-gray-700">School:</label>
+            <select id="school" name="school" class="w-full p-2 border border-gray-300 rounded" required>
+                {% for school in schools %}
+                    <option value="{{ school }}">{{ school }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-700">Post</button>
+    </form>
+</div>
+{% endblock %}
