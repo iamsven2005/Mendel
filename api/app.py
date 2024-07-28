@@ -1,4 +1,4 @@
-from flask import Flask, url_for, render_template, request, session, redirect, flash
+from flask import Flask, url_for, render_template, request, session, redirect, flash, jsonify
 from flask_session import Session
 from functools import wraps
 import os
@@ -111,6 +111,15 @@ def send_verification_email(email, code):
     }
     return resend.Emails.send(params)
 
+def send_test_email(email):
+    params = {
+        "from": ADMIN_EMAIL,
+        "to": [email],
+        "subject": "Email Verification Test",
+        "html": "<p>This is a test email to verify your school email address.</p>",
+    }
+    return resend.Emails.send(params)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -128,15 +137,20 @@ def index():
 @limiter.limit("5 per minute")
 def signup():
     if request.method == "POST":
-        email = request.form.get("email").strip().lower()
+        gmail = request.form.get("gmail").strip().lower()
+        school_email = request.form.get("school_email").strip().lower()
 
-        if not email.endswith("@mymail.nyp.edu.sg"):
-            flash("Email must end with @mymail.nyp.edu.sg")
+        if not gmail.endswith("@gmail.com"):
+            flash("Personal email must be a Gmail address.")
+            return redirect("/signup")
+        
+        if not school_email.endswith("@mymail.nyp.edu.sg"):
+            flash("School email must end with @mymail.nyp.edu.sg")
             return redirect("/signup")
 
         with connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT id, username, verified FROM users WHERE email = %s", (email,))
+                cursor.execute("SELECT id, username, verified FROM users WHERE email = %s", (gmail,))
                 user = cursor.fetchone()
 
                 if user and user.verified:  # If user exists and is verified
@@ -145,25 +159,12 @@ def signup():
                     session["username"] = user.username  # Store username in session
                     flash("Welcome back! You are now logged in.")
                     return redirect("/")
-                elif user and not user.verified:  # If user exists but not verified
-                    code = generate_verification_code()
-                    hashed_code = generate_password_hash(code)
-                    cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, email))
-                else:  # If user does not exist
-                    user_id = generate_id()
-                    username = generate_username()
-                    code = generate_verification_code()
-                    hashed_code = generate_password_hash(code)
-                    cursor.execute("INSERT INTO users (id, email, username, verification_code) VALUES (%s, %s, %s, %s)", (user_id, email, username, hashed_code))
-
-        response = send_verification_email(email, code)
-
-        if response.get("id"):
-            session["email"] = email
-            return redirect("/verify")
-        else:
-            flash("Failed to send verification email. Please try again.")
-            return redirect("/signup")
+                else:  # If user does not exist or is not verified
+                    send_test_email(school_email)
+                    session["gmail"] = gmail
+                    session["school_email"] = school_email
+                    flash("A test email has been sent to your school email. Please wait for verification.")
+                    return redirect("/verify")
     else:
         return render_template("signup.html")
 
@@ -171,29 +172,69 @@ def signup():
 @limiter.limit("5 per minute")
 def verify():
     if request.method == "POST":
-        email = session.get("email")
-        if not email:
+        gmail = session.get("gmail")
+        school_email = session.get("school_email")
+        if not gmail or not school_email:
             return redirect("/signup")
 
-        code = request.form.get("code").strip()
+        code = generate_verification_code()
+        hashed_code = generate_password_hash(code)
 
         with connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT id, username, verification_code FROM users WHERE email = %s", (email,))
-                row = cursor.fetchone()
-
-                if row and check_password_hash(row.verification_code, code):
-                    cursor.execute("UPDATE users SET verified = TRUE, verification_code = NULL WHERE email = %s", (email,))
-                    session["logged_in"] = True
-                    session["user_id"] = row.id  # Store user_id in session
-                    session["username"] = row.username  # Store username in session
-                    flash("Verification successful! You are now logged in.")
-                    return redirect("/")
+                cursor.execute("SELECT id FROM users WHERE email = %s", (gmail,))
+                user = cursor.fetchone()
+                
+                if user:
+                    cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, gmail))
                 else:
-                    flash("Invalid verification code. Please try again.")
-                    return redirect("/verify")
+                    user_id = generate_id()
+                    username = generate_username()
+                    cursor.execute("INSERT INTO users (id, email, username, verification_code) VALUES (%s, %s, %s, %s)", (user_id, gmail, username, hashed_code))
+
+        send_verification_email(gmail, code)
+        flash("A verification code has been sent to your personal Gmail.")
+        return redirect("/verify")
     else:
         return render_template("verify.html")
+
+@app.route("/webhook", methods=["POST"])
+@limiter.limit("5 per minute")
+def webhook():
+    data = request.get_json()
+    if data and data.get("status") == "email.delivered":
+        gmail = session.get("gmail")
+        if not gmail:
+            return jsonify({"message": "No Gmail found in session."}), 400
+
+        code = generate_verification_code()
+        hashed_code = generate_password_hash(code)
+
+        with connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT id FROM users WHERE email = %s", (gmail,))
+                user = cursor.fetchone()
+                
+                if user:
+                    cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, gmail))
+                else:
+                    user_id = generate_id()
+                    username = generate_username()
+                    cursor.execute("INSERT INTO users (id, email, username, verification_code) VALUES (%s, %s, %s, %s)", (user_id, gmail, username, hashed_code))
+
+        send_verification_email(gmail, code)
+        return jsonify({"message": "Verification email sent to personal Gmail."}), 200
+    else:
+        gmail = session.get("gmail")
+        if gmail:
+            params = {
+                "from": ADMIN_EMAIL,
+                "to": [gmail],
+                "subject": "School Email Verification Failed",
+                "html": "<p>Your school email verification failed. Please check your school email address and try again.</p>",
+            }
+            resend.Emails.send(params)
+        return jsonify({"message": "School email verification failed."}), 400
 
 @app.route("/logout")
 @login_required
