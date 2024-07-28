@@ -28,3 +28,5 @@ env\Scripts\activate
  pip install -r requirements.txt
  cd api
  flask run
+
+ //Todo: Change resend key, add kinde to prod, domain to cloudflare

@@ -1,0 +1,40 @@
+lockfileVersion: 5.4
+
+specifiers:
+  todo: ^1.1.0
+
+dependencies:
+  todo: 1.1.0
+
+packages:
+
+  /argvee/0.1.1:
+    resolution: {integrity: sha512-IJWeNu48Z5IJVkT8Udg9JYNIPHoIrT+cudtqztsbhtDg+GdPpBqR0tqIpsxI+p7MDT3X2xymVO00YW2kbknGRg==}
+    dev: false
+
+  /eyehurt/0.0.1:
+    resolution: {integrity: sha512-fEr0dLemd85heyPigq25edDMK5bYUxzok6uuwM4K3mcwg0yqSEkNuQlYl2MgS1kuo6NTADNdFul64vO/Bl0J3g==}
+    dev: false
+
+  /homepath/1.0.1:
+    resolution: {integrity: sha512-jbZiNN6kaqx0dGNMX3UfBAEC5YVnY6KRzZpkgAIlWCs7/jrY12v2cQaWWjTfAVjVL1aAbFAdqxq4BVCGoqhS0g==}
+    dev: false
+
+  /ms/0.6.2:
+    resolution: {integrity: sha512-/pc3eh7TWorTtbvXg8je4GvrvEqCfH7PA3P7iW01yL2E53FKixzgMBaQi0NOPbMJqY34cBSvR0tZtmlTkdUG4A==}
+    dev: false
+
+  /refractory/0.0.3:
+    resolution: {integrity: sha512-U7SMGab8BwfYGwjVArdNlHuaPSRRBNBMl5J97LfvLI3F4hTVRIt+8przGb1iKOLEjeUvEA3tWG9Ojbx91WiKtg==}
+    dev: false
+
+  /todo/1.1.0:
+    resolution: {integrity: sha512-n4dY2gq2cuboFOvdJNuxVVjVkljvACpZ7z7Gl8aAfCu4MBYFEhrSSzrlMoXr3DbzT1gW6zrU6H5GGZzZpahkiQ==}
+    hasBin: true
+    dependencies:
+      argvee: 0.1.1
+      eyehurt: 0.0.1
+      homepath: 1.0.1
+      ms: 0.6.2
+      refractory: 0.0.3
+    dev: false

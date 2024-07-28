@@ -5,24 +5,48 @@ from functools import wraps
 import os
 from dotenv import load_dotenv
 import psycopg2
-
 from kinde_sdk import Configuration, ApiException
 from kinde_sdk.kinde_api_client import GrantType, KindeApiClient
 from kinde_sdk.apis.tags import users_api
 from kinde_sdk.model.user import User
+import resend
 
-load_dotenv()  # Load environment variables from .env file
+CONTACT_EMAIL = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Message Notification</title>
+</head>
+<body>
+    <h2>New Message Received!</h2>
+    <p><strong>Name:</strong> {name}</p>
+    <p><strong>Email:</strong> {email}</p>
+    <p><strong>Message:</strong></p>
+    <blockquote>
+        {message}
+    </blockquote>
+</body>
+</html>
+"""
 
-url = os.getenv("DATABASE_URL")
-connection = psycopg2.connect(url)
 CREATE_TABLE_SQL = """
     CREATE TABLE IF NOT EXISTS rooms (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL
     )
 """
+load_dotenv()  # Load environment variables from .env file
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+url = os.getenv("DATABASE_URL")
+connection = psycopg2.connect(url)
+
+
 app = Flask(__name__)
 
+
+app.config["ADMIN_EMAIL"] = os.getenv("ADMIN_EMAIL")
 app.config["LOGOUT_REDIRECT_URL"] = os.getenv("LOGOUT_REDIRECT_URL")
 app.config["KINDE_CALLBACK_URL"] = os.getenv("KINDE_CALLBACK_URL")
 app.config["CLIENT_ID"] = os.getenv("CLIENT_ID")
@@ -86,7 +110,7 @@ def login_required(user):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-
+##ADD DB
 @app.route("/1", methods=["GET"])
 def create_room():
     with connection:
@@ -222,3 +246,43 @@ def get_api_demo():
                 print(f"Management API not setup: {ex}")
 
     return render_template(template, **data)
+
+##ADD EMAIL
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        # Load form data
+        form_data = request.form.to_dict()
+
+        # Configuring the email fields
+        params = {
+            "from": ADMIN_EMAIL,
+            "to": [form_data['email']],
+            "subject": f"New message from {form_data['name']}!",
+            "html": CONTACT_EMAIL.format(**form_data),
+        }
+
+        # Sending the email and catching response
+        response = resend.Emails.send(params)
+
+        # Handle the response
+        if response.get("id"):
+            return redirect("/contact")
+        else:
+            return {"message": "Something went wrong. Please try again."}
+    else:
+        # Render the contact form
+        return render_template("user-contact.html")
+@app.route("/search", methods=["POST"])
+def search_todo():
+    search_term = request.form.get("search")
+
+    if not len(search_term):
+        return render_template("todo.html", todos=[])
+
+    res_todos = []
+    for todo in todos:
+        if search_term in todo["title"]:
+            res_todos.append(todo)
+
+    return render_template("todo.html", todos=res_todos)
