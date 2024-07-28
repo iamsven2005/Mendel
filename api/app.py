@@ -393,13 +393,25 @@ def send_comment_notification(post_id, comment_content):
 def webhook():
     signature = request.headers.get('Resend-Signature')
     payload = request.get_data()
+    
+    # Debug statements to trace issues
+    print("Received webhook request")
+    print(f"Payload: {payload}")
+    print(f"Signature: {signature}")
+    
+    if not signature:
+        print("Missing Resend-Signature header")
+        return "Missing signature", 400
+    
     calculated_signature = hmac.new(WEBHOOK_SECRET.encode(), payload, hashlib.sha256).hexdigest()
-
+    
     if not hmac.compare_digest(signature, calculated_signature):
         print("Invalid webhook signature")
         return "Invalid signature", 400
 
     event = request.json
+    print(f"Webhook event: {event}")
+
     if event["type"] == "email.delivered":
         email_id = event["data"]["email_id"]
         with connection:
