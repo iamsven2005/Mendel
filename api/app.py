@@ -14,6 +14,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import hmac
 import hashlib
+import base64
 
 load_dotenv()
 
@@ -396,7 +397,7 @@ def webhook():
         print("Missing Resend-Signature header")
         return "Missing signature", 400
 
-    calculated_signature = hmac.new(WEBHOOK_SECRET.encode(), payload, hashlib.sha256).hexdigest()
+    calculated_signature = base64.b64encode(hmac.new(WEBHOOK_SECRET.encode(), payload, hashlib.sha256).digest()).decode()
 
     if not hmac.compare_digest(signature, calculated_signature):
         print("Invalid webhook signature")
