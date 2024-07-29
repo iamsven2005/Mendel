@@ -14,7 +14,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import hmac
 import hashlib
-import json
 
 load_dotenv()
 
@@ -206,7 +205,6 @@ def verify():
     else:
         return render_template("verify.html")
 
-
 @app.route("/logout")
 @login_required
 @limiter.limit("5 per minute")
@@ -394,14 +392,9 @@ def webhook():
     signature = request.headers.get('Resend-Signature')
     payload = request.get_data()
 
-    # Debug statement to log the incoming payload and signature
-    print("Received webhook request")
-    print(f"Payload: {payload}")
-    print(f"Signature: {signature}")
-
-    if signature is None:
+    if not signature:
         print("Missing Resend-Signature header")
-        return "Missing Resend-Signature header", 400
+        return "Missing signature", 400
 
     calculated_signature = hmac.new(WEBHOOK_SECRET.encode(), payload, hashlib.sha256).hexdigest()
 
@@ -410,6 +403,8 @@ def webhook():
         return "Invalid signature", 400
 
     event = request.json
+    print(f"Received webhook event: {event}")
+
     if event["type"] == "email.delivered":
         email_id = event["data"]["email_id"]
         with connection:
@@ -423,8 +418,6 @@ def webhook():
                     cursor.execute("UPDATE users SET verification_code = %s WHERE email = %s", (hashed_code, user.email))
                     send_verification_email(personal_email, code)
     return jsonify({"status": "success"}), 200
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
