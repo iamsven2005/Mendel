@@ -1,16 +1,17 @@
 {% extends "base.html" %}
+{% from 'macros.html' import input, button %}
 
-{% block title %}Verify Email{% endblock %}
+{% block title %}Verify OTP{% endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto p-8 rounded shadow">
-    <h1 class="text-2xl font-bold mb-4">Verify Your Email</h1>
+    <h1 class="text-2xl font-bold mb-4">Enter Your OTP</h1>
     <form method="POST">
         <div class="mb-4">
-            <label for="code" class="block">Verification Code:</label>
-            <input type="text" id="code" name="code" class="w-full p-2 border  rounded" required>
+            <label for="code" class="block">OTP Code:</label>
+            {{ input(name='code', id='code', type='text', attributes={'required': 'true'}) }}
         </div>
-        <button type="submit" class="w-full p-2 rounded ">Verify</button>
+        {{ button(label='Verify', class_name='w-full p-2 rounded', attributes={'type': 'submit'}) }}
     </form>
     {% with messages = get_flashed_messages() %}
       {% if messages %}

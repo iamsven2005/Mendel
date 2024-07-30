@@ -1,0 +1,156 @@
+{# templates/macros.html #}
+{% macro card(title, description, content, footer, class_name='', header_class_name='', title_class_name='', description_class_name='', content_class_name='', footer_class_name='') %}
+<div class="rounded-lg border bg-card text-card-foreground shadow-sm {{ class_name }}">
+    <div class="flex flex-col space-y-1.5 p-6 {{ header_class_name }}">
+        <h3 class="text-2xl font-semibold leading-none tracking-tight {{ title_class_name }}">
+            {{ title }}
+        </h3>
+        <p class="text-sm text-muted-foreground {{ description_class_name }}">
+            {{ description }}
+        </p>
+    </div>
+    <div class="p-6 pt-0 {{ content_class_name }}">
+        {{ content }}
+    </div>
+    <div class="flex items-center p-6 pt-0 {{ footer_class_name }}">
+        {{ footer }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro input(name, id, type="text", class_name="", attributes={}) %}
+    {% set attr_string = '' %}
+    {% for key, value in attributes.items() %}
+        {% set attr_string = attr_string + ' ' + key + '="' + value + '"' %}
+    {% endfor %}
+    <input
+        type="{{ type }}"
+        name="{{ name }}"
+        id="{{ id }}"
+        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {{ class_name }}"
+        {{ attr_string }}
+    />
+{% endmacro %}
+
+{% macro textarea(name, id, class_name="", attributes={}) %}
+    {% set attr_string = '' %}
+    {% for key, value in attributes.items() %}
+        {% set attr_string = attr_string + ' ' + key + '="' + value + '"' %}
+    {% endfor %}
+    <textarea
+        name="{{ name }}"
+        id="{{ id }}"
+        class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {{ class_name }}"
+        {{ attr_string }}
+    ></textarea>
+{% endmacro %}
+
+{% macro button(label, variant="default", size="default", class_name="", attributes={}) %}
+    {% set attr_string = '' %}
+    {% for key, value in attributes.items() %}
+        {% set attr_string = attr_string + ' ' + key + '="' + value + '"' %}
+    {% endfor %}
+    
+    {% set variant_classes = {
+        'default': 'bg-primary text-primary-foreground hover:bg-primary/90',
+        'destructive': 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        'outline': 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        'secondary': 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        'ghost': 'hover:bg-accent hover:text-accent-foreground',
+        'link': 'text-primary underline-offset-4 hover:underline'
+    }[variant] %}
+    
+    {% set size_classes = {
+        'default': 'h-10 px-4 py-2',
+        'sm': 'h-9 rounded-md px-3',
+        'lg': 'h-11 rounded-md px-8',
+        'icon': 'h-10 w-10'
+    }[size] %}
+    
+    <button
+        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 {{ variant_classes }} {{ size_classes }} {{ class_name }}"
+        {{ attr_string }}
+    >
+        {{ label }}
+    </button>
+{% endmacro %}
+
+{% macro label(for_id, label_text, class_name="", attributes={}) %}
+    {% set attr_string = '' %}
+    {% for key, value in attributes.items() %}
+        {% set attr_string = attr_string + ' ' + key + '="' + value + '"' %}
+    {% endfor %}
+    <label
+        for="{{ for_id }}"
+        class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 {{ class_name }}"
+        {{ attr_string }}
+    >{{ label_text }}</label>
+{% endmacro %}
+
+{% macro form(action, method="post", class_name="", attributes={}, content="") %}
+    {% set attr_string = '' %}
+    {% for key, value in attributes.items() %}
+        {% set attr_string = attr_string + ' ' + key + '="' + value + '"' %}
+    {% endfor %}
+    <form
+        action="{{ action }}"
+        method="{{ method }}"
+        class="{{ class_name }}"
+        {{ attr_string }}
+    >
+        {{ content | safe }}
+    </form>
+{% endmacro %}
+{# templates/macros.html #}
+{# templates/macros.html #}
+{% macro post(post) %}
+<li class="mb-4 p-4 rounded shadow" id="post-{{ post.id }}">
+    <h2 class="text-xl font-bold">{{ post.title }}</h2>
+    <p>Posted by {{ post.username }}</p>
+    <p>{{ post.content }}</p>
+    <div class="flex items-center">
+        <p class="mr-4">Likes: {{ post.likes }} Dislikes: {{ post.dislikes }}</p>
+        <p class="mr-4">Comments: {{ post.comment_count }}</p>
+        <form hx-post="{{ url_for('like_dislike', post_id=post.id, action='like') }}" hx-target="#post-{{ post.id }}" hx-swap="outerHTML">
+            <button type="submit" class="p-2 rounded">Like</button>
+        </form>
+        <form hx-post="{{ url_for('like_dislike', post_id=post.id, action='dislike') }}" hx-target="#post-{{ post.id }}" hx-swap="outerHTML" class="ml-2">
+            <button type="submit" class="p-2 rounded">Dislike</button>
+        </form>
+        <a href="{{ url_for('post_detail', post_id=post.id) }}" class="ml-4 hover:underline">Comments</a>
+    </div>
+</li>
+{% endmacro %}
+
+
+
+{% macro comment(comment) %}
+<li class="mb-2 p-2 bg-gray-100 rounded">
+    <p>{{ comment.content }}</p>
+    <p>Commented by {{ comment.username }}</p>
+</li>
+{% endmacro %}
+
+{% macro search_form(action, query_name="query", query_placeholder="Search...", button_label="Search") %}
+    <form method="GET" action="{{ action }}" class="flex items-center">
+        {{ input(name=query_name, id=query_name, attributes={"placeholder": query_placeholder}) }}
+        {{ button(label=button_label, class_name="ml-2", attributes={"type": "submit"}) }}
+    </form>
+{% endmacro %}
+
+{% macro filter_form(action, schools, order_by_options, selected_school="", selected_order_by="created_at") %}
+    <form method="GET" action="{{ action }}" class="flex items-center">
+        <select name="school" class="p-2 rounded">
+            <option value="">All Schools</option>
+            {% for school in schools %}
+                <option value="{{ school }}" {% if school == selected_school %}selected{% endif %}>{{ school }}</option>
+            {% endfor %}
+        </select>
+        <select name="order_by" class="p-2 rounded ml-2">
+            {% for key, label in order_by_options.items() %}
+                <option value="{{ key }}" {% if key == selected_order_by %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        {{ button(label="Filter", class_name="ml-2", attributes={"type": "submit"}) }}
+    </form>
+{% endmacro %}

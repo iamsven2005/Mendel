@@ -1,33 +1,30 @@
+{# templates/post_detail.html #}
 {% extends "base.html" %}
+{% from 'macros.html' import form, button, textarea %}
 
 {% block title %}{{ post.title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white p-8 rounded shadow">
+<div class="max-w-2xl mx-auto p-8 rounded shadow">
     <h1 class="text-2xl font-bold mb-4">{{ post.title }}</h1>
     <p>Posted by {{ post.username }}</p>
     <p class="mb-4">{{ post.content }}</p>
     <h2 class="text-xl font-bold mb-2">Comments</h2>
-    <ul>
+    <ul id="comments-list">
         {% for comment in comments %}
-            <li class="mb-2 p-2 bg-gray-100 rounded">
-                <p>{{ comment.content }}</p>
-                <p>Commented by {{ comment.username }}</p>
-                <div class="flex items-center">
-                    <form method="POST" action="{{ url_for('comment_vote', comment_id=comment.id, action='upvote') }}">
-                        <button type="submit" class="bg-green-500 text-white p-2 rounded hover:bg-green-700">Upvote</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('comment_vote', comment_id=comment.id, action='downvote') }}" class="ml-2">
-                        <button type="submit" class="bg-red-500 text-white p-2 rounded hover:bg-red-700">Downvote</button>
-                    </form>
-                    <span class="ml-4">Upvotes: {{ comment.upvotes }} Downvotes: {{ comment.downvotes }}</span>
-                </div>
-            </li>
+            {% include 'comment_snippet.html' %}
         {% endfor %}
     </ul>
-    <form method="POST" action="{{ url_for('comment', post_id=post.id) }}" class="mt-4">
-        <textarea name="content" class="w-full p-2 border border-gray-300 rounded" required></textarea>
-        <button type="submit" class="mt-2 w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-700">Add Comment</button>
-    </form>
+    {{ form(
+        url_for('comment', post_id=post.id),
+        class_name='mt-4',
+        attributes={
+            'hx-post': url_for('comment', post_id=post.id),
+            'hx-target': '#comments-list',
+            'hx-swap': 'beforeend'
+        },
+        content=textarea(name='content', id='content', attributes={'required': 'true'}) ~
+                button(label='Add Comment', class_name='mt-2 w-full p-2 rounded', attributes={'type': 'submit'})
+    ) }}
 </div>
 {% endblock %}

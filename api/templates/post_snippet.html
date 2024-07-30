@@ -10,8 +10,8 @@
     <a href="/logout" class="ml-4 p-2 rounded">Logout</a>
 </div>
 <ul id="posts-list">
-    {% for post_item in posts %}
-        {{ post(post_item) }}
+    {% for p in posts %}
+        {{ post(p) }}
     {% endfor %}
 </ul>
 {% endblock %}
