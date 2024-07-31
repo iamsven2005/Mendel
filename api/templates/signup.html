@@ -1,3 +1,4 @@
+<!-- templates/signup.html -->
 {% extends "base.html" %}
 
 {% block title %}Sign Up{% endblock %}
@@ -7,12 +8,16 @@
     <h1 class="text-2xl font-bold mb-4">Sign Up</h1>
     <form method="POST">
         <div class="mb-4">
-            <label for="email" class="block ">School Email:</label>
-            <input type="email" id="email" name="email" class="w-full p-2 border  rounded" required>
+            <label for="email" class="block">School Email:</label>
+            <input type="email" id="email" name="email" class="w-full p-2 border rounded" required>
         </div>
         <div class="mb-4">
-            <label for="personal_email" class="block ">Personal Email (Gmail):</label>
+            <label for="personal_email" class="block">Personal Email:</label>
             <input type="email" id="personal_email" name="personal_email" class="w-full p-2 border rounded" required>
+        </div>
+        <div class="mb-4">
+            <label for="admin_code" class="block">Admin Code (Optional):</label>
+            <input type="text" id="admin_code" name="admin_code" class="w-full p-2 border rounded">
         </div>
         <button type="submit" class="w-full p-2 rounded">Sign Up</button>
     </form>

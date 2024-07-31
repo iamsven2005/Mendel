@@ -1,29 +1,13 @@
-{% from 'macros.html' import form, button %}
-
 <li class="mb-2 p-2 bg-gray-100 rounded" id="comment-{{ comment.id }}">
     <p>{{ comment.content }}</p>
     <p>Commented by {{ comment.username }}</p>
     <div class="flex items-center">
-        {{ form(
-            url_for('comment_vote', comment_id=comment.id, action='upvote'),
-            class_name='inline',
-            attributes={
-                'hx-post': url_for('comment_vote', comment_id=comment.id, action='upvote'),
-                'hx-target': '#comment-' ~ comment.id,
-                'hx-swap': 'outerHTML'
-            },
-            content=button(label='Upvote', class_name='p-2 rounded', attributes={'type': 'submit'})
-        ) }}
-        {{ form(
-            url_for('comment_vote', comment_id=comment.id, action='downvote'),
-            class_name='inline ml-2',
-            attributes={
-                'hx-post': url_for('comment_vote', comment_id=comment.id, action='downvote'),
-                'hx-target': '#comment-' ~ comment.id,
-                'hx-swap': 'outerHTML'
-            },
-            content=button(label='Downvote', class_name='p-2 rounded', attributes={'type': 'submit'})
-        ) }}
+        <form hx-post="{{ url_for('comment_vote', comment_id=comment.id, action='upvote') }}" hx-target="#comment-{{ comment.id }}" hx-swap="outerHTML">
+            <button type="submit" class="p-2 rounded">Upvote</button>
+        </form>
+        <form hx-post="{{ url_for('comment_vote', comment_id=comment.id, action='downvote') }}" hx-target="#comment-{{ comment.id }}" hx-swap="outerHTML" class="ml-2">
+            <button type="submit" class="p-2 rounded">Downvote</button>
+        </form>
         <span class="ml-4">Upvotes: {{ comment.upvotes }} Downvotes: {{ comment.downvotes }}</span>
     </div>
 </li>

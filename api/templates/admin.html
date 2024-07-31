@@ -1,0 +1,27 @@
+{# templates/admin.html #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    <ul>
+        {% for report in reports %}
+            <li>
+                <h2>{{ report.title }}</h2>
+                <p>{{ report.content }}</p>
+                <p>Reported by User ID: {{ report.reporter_id }}</p>
+                <form method="POST" action="{{ url_for('ban_user', post_id=report.post_id) }}?admin_name={{ admin_name }}">
+                    <input type="hidden" name="post_id" value="{{ report.post_id }}">
+                    <input type="hidden" name="action" value="ban">
+                    <button type="submit">Ban Post and User</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="/">Back to Home</a>
+</body>
+</html>

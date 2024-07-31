@@ -1,4 +1,3 @@
-{# templates/create_post.html #}
 {% extends "base.html" %}
 {% from 'macros.html' import card, input, textarea, button, label %}
 
@@ -7,7 +6,7 @@
 {% block content %}
 <div class="max-w-lg mx-auto bg-white p-8 rounded shadow">
     <h1 class="text-2xl font-bold mb-4">Create a New Post</h1>
-    <form hx-post="{{ url_for('create_post') }}"  hx-swap="beforeend">
+    <form method="POST" action="{{ url_for('create_post') }}">
         <div class="mb-4">
             {{ label(for_id='title', label_text='Title:', class_name='block text-gray-700') }}
             {{ input(name='title', id='title', type='text', attributes={'required': 'true'}) }}

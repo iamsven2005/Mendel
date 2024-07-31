@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}My API Keys{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto p-8 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">My API Keys</h1>
+    <form method="POST" class="mb-4">
+        <button type="submit" class="p-2 bg-blue-500 text-white rounded">Generate API Key</button>
+    </form>
+    {% if keys %}
+        <ul>
+            {% for key in keys %}
+                <li class="mb-4 p-4 rounded border">
+                    <p><strong>Public Key:</strong> {{ key.public_key }}</p>
+                    <p><strong>Secret Key:</strong> {{ key.secret_key }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have no API keys. Generate one to start using the API.</p>
+    {% endif %}
+</div>
+{% endblock %}

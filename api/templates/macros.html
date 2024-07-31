@@ -101,8 +101,7 @@
         {{ content | safe }}
     </form>
 {% endmacro %}
-{# templates/macros.html #}
-{# templates/macros.html #}
+
 {% macro post(post) %}
 <li class="mb-4 p-4 rounded shadow" id="post-{{ post.id }}">
     <h2 class="text-xl font-bold">{{ post.title }}</h2>
@@ -117,10 +116,15 @@
         <form hx-post="{{ url_for('like_dislike', post_id=post.id, action='dislike') }}" hx-target="#post-{{ post.id }}" hx-swap="outerHTML" class="ml-2">
             <button type="submit" class="p-2 rounded">Dislike</button>
         </form>
+        <form hx-post="{{ url_for('report_post', post_id=post.id) }}" hx-target="#post-{{ post.id }}" hx-swap="none" class="ml-2">
+            <button type="submit" class="p-2 rounded">Report</button>
+        </form>
         <a href="{{ url_for('post_detail', post_id=post.id) }}" class="ml-4 hover:underline">Comments</a>
     </div>
 </li>
 {% endmacro %}
+
+
 
 
 
@@ -154,3 +158,4 @@
         {{ button(label="Filter", class_name="ml-2", attributes={"type": "submit"}) }}
     </form>
 {% endmacro %}
+

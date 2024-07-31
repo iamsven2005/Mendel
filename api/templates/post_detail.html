@@ -1,4 +1,3 @@
-{# templates/post_detail.html #}
 {% extends "base.html" %}
 {% from 'macros.html' import form, button, textarea %}
 
@@ -15,16 +14,6 @@
             {% include 'comment_snippet.html' %}
         {% endfor %}
     </ul>
-    {{ form(
-        url_for('comment', post_id=post.id),
-        class_name='mt-4',
-        attributes={
-            'hx-post': url_for('comment', post_id=post.id),
-            'hx-target': '#comments-list',
-            'hx-swap': 'beforeend'
-        },
-        content=textarea(name='content', id='content', attributes={'required': 'true'}) ~
-                button(label='Add Comment', class_name='mt-2 w-full p-2 rounded', attributes={'type': 'submit'})
-    ) }}
+    {{ form(url_for('comment', post_id=post.id), class_name='mt-4', attributes={'hx-post': url_for('comment', post_id=post.id), 'hx-target': '#comments-list', 'hx-swap': 'beforeend'}, content=textarea(name='content', id='content', attributes={'required': 'true'}) ~ button(label='Add Comment', class_name='mt-2 w-full p-2 rounded', attributes={'type': 'submit'})) }}
 </div>
 {% endblock %}

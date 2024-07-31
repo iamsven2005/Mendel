@@ -1,4 +1,3 @@
-{% from 'macros.html' import search_form, filter_form %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,20 +11,28 @@
     <header class="p-4">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-3xl font-bold"><a href="/">Mendel</a></h1>
-            {{ search_form(action=url_for('search')) }}
+            <form method="GET" action="{{ url_for('search') }}" class="flex items-center">
+                <input type="text" name="query" placeholder="Search..." class="p-2 rounded">
+                <button type="submit" class="p-2 rounded ml-2">Search</button>
+            </form>
         </div>
-        {{ filter_form(action=url_for('filter'), schools=[
-            "School of Applied Science",
-            "School of Business Management",
-            "School of Design & Media",
-            "School of Engineering",
-            "School of Health & Social Sciences",
-            "School of Information Technology"
-        ], order_by_options={
-            "created_at": "Date",
-            "likes": "Likes",
-            "comment_count": "Comments"
-        }) }}
+        <form method="GET" action="{{ url_for('filter') }}" class="flex items-center">
+            <select name="school" class="p-2 rounded">
+                <option value="">All Schools</option>
+                <option value="School of Applied Science">School of Applied Science</option>
+                <option value="School of Business Management">School of Business Management</option>
+                <option value="School of Design & Media">School of Design & Media</option>
+                <option value="School of Engineering">School of Engineering</option>
+                <option value="School of Health & Social Sciences">School of Health & Social Sciences</option>
+                <option value="School of Information Technology">School of Information Technology</option>
+            </select>
+            <select name="order_by" class="p-2 rounded ml-2">
+                <option value="created_at">Date</option>
+                <option value="likes">Likes</option>
+                <option value="comment_count">Comments</option>
+            </select>
+            <button type="submit" class="p-2 rounded ml-2">Filter</button>
+        </form>
     </header>
     <main class="container mx-auto my-4">
         {% block content %}{% endblock %}
